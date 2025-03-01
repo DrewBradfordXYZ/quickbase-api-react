@@ -1,4 +1,4 @@
-# quickbase-react
+# quickbase-api-react
 
 ## Description
 
@@ -14,15 +14,28 @@ Written in Typescript, for development and production environments.
 - Logging: Offers configurable logging for debugging.
 - Reusable: Can be dropped into any React project using https://github.com/tflanagan/node-quickbase
 
+## Prerequisites
+
+- React that supports hooks. Version `16.8` or higher.
+- A QuickBase account. A free [builder account](https://www.quickbase.com/builder-program) will work.
+
+## Install
+
+```bash
+npm install quickbase-api-react --save-dev
+```
+
+## Uninstall
+
+```bash
+npm uninstall quickbase-api-react --save-dev
+```
+
 ## Authentication
 
 `npm run build` uses `temporary tokens`
 
 `npm run dev` uses a `user token`
-
-## Requirements
-
-React version `16.8` or higher.
 
 ## Options
 
@@ -70,3 +83,11 @@ const MyComponent: React.FC = () => {
 
 export default MyComponent;
 ```
+
+## Contributing
+
+If you would like to contribute to this project, please fork the repository and submit a pull request.
+
+## License
+
+This project is licensed under the MIT License.
