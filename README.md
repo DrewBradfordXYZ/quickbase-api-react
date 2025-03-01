@@ -4,7 +4,7 @@
 
 A React Hook wrapper for the QuickBase RESTful API [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) providing token management, logging, and environment-specific behavior.
 
-Written in Typescript, for development and production environments.
+Written in Typescript, for development and production environments. This project's aim is to use [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) in React without any modifications to the peer library dependancy.
 
 ## Pitch
 
