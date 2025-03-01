@@ -1,0 +1,38 @@
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json  # Optional: Include if you use npm and prefer yarn.lock, or vice versa
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+*.log
+logs/
+
+# Vite-specific
+.vite/
+vite.config.ts.timestamp-*
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+
+# Misc
+*.swp
+*.bak
