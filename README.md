@@ -4,7 +4,7 @@
 
 A React hook wrapper for [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) providing token management, logging, and environment-specific behavior for the [QuickBase JSON RESTful API](https://developer.quickbase.com/). Written in TypeScript.
 
-The aim of this project is to preserve and use [node-quickbase](https://github.com/tflanagan/node-quickbase) in React. It retains access to the original method signatures for API requests. And uses the autoRenewTempTokens feature to regenerate temporary tokens after their 5 min lifespan expires.
+The aim of this project is to preserve and use [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) in React. It retains access to the original method signatures for API requests. And uses the autoRenewTempTokens feature to regenerate temporary tokens after their 5 min lifespan expires.
 
 ## Pitch
 
@@ -13,7 +13,7 @@ The aim of this project is to preserve and use [node-quickbase](https://github.c
 - Flexible: Supports all QuickBase methods without modification.
 - Type-Safe: Retains original method signatures and response types.
 - Logging: Offers configurable logging for debugging.
-- Reusable: Can be dropped into any React project using https://github.com/tflanagan/node-quickbase
+- Reusable: Can be dropped into any React project using [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase).
 
 ## Prerequisites
 
