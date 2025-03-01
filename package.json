@@ -1,0 +1,32 @@
+{
+  "name": "quickbase-react",
+  "version": "1.0.1",
+  "description": "A React hook wrapper for QuickBase with token management and logging",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "release": "standard-version"
+  },
+  "peerDependencies": {
+    "quickbase": "^6.0.0",
+    "react": "^16.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.0",
+    "quickbase": "^6.0.0",
+    "standard-version": "^9.5.0",
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DrewBradfordXYZ/quickbase-react.git"
+  }
+}
