@@ -67,7 +67,7 @@ const MyComponent: React.FC = () => {
     realm: "your-realm", // required
     userToken: "user-token", // needed for mode: "development"
     appToken: "app-token", // optional
-    mode: "development", // default: "production"
+    mode: "development", // default is "production"
     debug: true, // or false
     onError: (err, method, dbid) =>
       console.error(`Error in ${method} for ${dbid}: ${err.message}`),
