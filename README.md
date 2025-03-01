@@ -64,11 +64,11 @@ import { QuickBaseResponseGetApp } from "quickbase";
 
 const MyComponent: React.FC = () => {
   const qb = useQuickBase({
-    userToken: "user-token",
-    appToken: "app-token",
-    realm: "your-realm",
-    mode: "development",
-    debug: true,
+    realm: "your-realm", // required
+    userToken: "user-token", // needed for mode: "development"
+    appToken: "app-token", // optional
+    mode: "development", // default: "production"
+    debug: true, // or false
     onError: (err, method, dbid) =>
       console.error(`Error in ${method} for ${dbid}: ${err.message}`),
   });
