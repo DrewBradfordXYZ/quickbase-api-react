@@ -34,17 +34,25 @@ npm install quickbase-api-react --save-dev
 npm uninstall quickbase-api-react --save-dev
 ```
 
-## Authentication
+## Authentication Modes
 
-`npm run build` uses `temporary tokens`
+- TEMPORARY TOKENS `mode`: `"production"`
 
-`npm run dev` uses a `user token`
+- USER TOKEN `mode`: `"development"`
+
+> **Note:** Consider setting `mode:` to enviornment variables associated with scripts like `npm run dev` or `npm run build`. This will switch modes automatically.
+
+Examples:
+
+- **Vite** `mode`: `import.meta.env.MODE`
+- **Webpack** `mode`: `process.env.NODE_ENV`
+- **Create React App** `mode`: `process.env.NODE_ENV`
 
 ## Options
 
 - **realm**: QuickBase realm (**required**).
 - **userToken**: User token for development mode (**optional**).
-- **appToken**: App token for production mode (**optional**).
+- **appToken**: Depends on your app settings (**optional**).
 - **mode**: `"development"` | `"production"` (default: `"production"`).
 - **debug**: Enable detailed logging (default: `false`).
 - **onError**: Callback for error handling (**optional**).
