@@ -11,7 +11,7 @@ For example, the autoRenewTempTokens feature in [/tflanagan/node-quickbase](http
 
 ## Pitch
 
-- Stable: Handles temp-token mapping to dbids, allowing reuse and renewal, logging, and handles API calls reliably.
+- Stable: Handles temp-token mapping to dbids, logging, and API calls reliably.
 - Flexible: Supports all QuickBase methods without modification.
 - Type-Safe: Retains original method signatures and response types.
 - Logging: Offers configurable logging for debugging.
