@@ -67,7 +67,7 @@ Examples:
 
 ```typescript
 import React, { useEffect, useState } from "react";
-import { useQuickBase } from "@DrewBradfordXYZ/quickbase-react";
+import { useQuickBase } from "quickbase-api-react";
 import { QuickBaseResponseGetApp } from "quickbase";
 
 const MyComponent: React.FC = () => {
