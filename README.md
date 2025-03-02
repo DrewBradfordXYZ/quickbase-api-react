@@ -4,7 +4,7 @@
 
 A React hook wrapper for [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) providing token management, logging, and environment-specific behavior for the [QuickBase JSON RESTful API](https://developer.quickbase.com/). Written in TypeScript.
 
-The aim of this project is to preserve and use [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) in React. It retains access to the original method signatures for API requests. And uses the autoRenewTempTokens feature to regenerate temporary tokens after their 5 min lifespan expires.
+The aim of this project is to preserve and use [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) in React. It retains access to the original method signatures for API requests. And uses the autoRenewTempTokens feature to regenerate temporary tokens after the 5 min lifespan expires.
 
 ## Pitch
 
@@ -23,13 +23,19 @@ The aim of this project is to preserve and use [/tflanagan/node-quickbase](https
 ## Install
 
 ```bash
-npm install quickbase-api-react --save-dev
+# Install Library
+npm install --save quickbase-api-react
+# Install peerDependancy if not installed already.
+npm install --save quickbase
 ```
 
 ## Uninstall
 
 ```bash
-npm uninstall quickbase-api-react --save-dev
+# Remove Library
+npm uninstall --save quickbase-api-react
+# Optionally remove peerDependancies
+npm uninstall --save quickbase
 ```
 
 ## Authentication Modes
@@ -38,7 +44,7 @@ npm uninstall quickbase-api-react --save-dev
 
 - USER TOKEN `mode`: `"development"`
 
-> **Note:** Consider setting `mode:` to enviornment variables associated with scripts like `npm run dev` or `npm run build`. This will switch modes automatically.
+> **Note:** Consider setting `mode:` to enviornment variables associated with scripts like `npm run dev` or `npm run build`. So you can switch modes automatically.
 
 Examples:
 
@@ -51,7 +57,7 @@ Examples:
 - **realm**: QuickBase realm (**required**).
 - **userToken**: User token for development mode (**optional**).
 - **appToken**: Depends on your app settings (**optional**).
-- **mode**: `"development"` | `"production"` (default: `"production"`).
+- **mode**: `"development"` or `"production"` (default: `"production"`).
 - **debug**: Enable detailed logging (default: `false`).
 - **onError**: Callback for error handling (**optional**).
 
@@ -68,9 +74,9 @@ const MyComponent: React.FC = () => {
     userToken: "user-token", // needed for mode: "development"
     appToken: "app-token", // optional
     mode: "development", // default is "production"
-    debug: true, // or false
+    debug: true, // default is false
     onError: (err, method, dbid) =>
-      console.error(`Error in ${method} for ${dbid}: ${err.message}`),
+      console.error(`Error in ${method} for ${dbid}: ${err.message}`), // Just an example
   });
 
   const [appData, setAppData] = useState<QuickBaseResponseGetApp | null>(null);
@@ -78,7 +84,7 @@ const MyComponent: React.FC = () => {
   useEffect(() => {
     const fetchApp = async () => {
       try {
-        const response = await qb.getApp({ appId: "xxxxxxx" });
+        const response = await qb.getApp({ appId: "your-appId-here" });
         setAppData(response);
       } catch (error) {
         console.error("Fetch app failed:", error);
