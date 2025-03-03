@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [2.0.1](https://github.com/DrewBradfordXYZ/quickbase-react/compare/v2.0.0...v2.0.1) (2025-03-03)
 
+Bug fix: sequential fetching works again.
+
 ## [2.0.0](https://github.com/DrewBradfordXYZ/quickbase-react/compare/v1.0.1...v2.0.0) (2025-03-03)
 
 Multiple DBID API calls is working and added concurrency.

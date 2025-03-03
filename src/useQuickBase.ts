@@ -38,7 +38,7 @@ export const useQuickBase = (
     const handler: ProxyHandler<QuickBase> = {
       get(target: QuickBase, prop: string) {
         if (prop === "logMap") {
-          return quickbaseService.logMap.bind(quickbaseService); // Bind context explicitly
+          return quickbaseService.logMap.bind(quickbaseService);
         }
         const originalMethod = (target as any)[prop];
         if (typeof originalMethod !== "function" || prop === "setTempToken") {
@@ -63,12 +63,15 @@ export const useQuickBase = (
                 await quickbaseService.ensureTempToken(dbid);
               }
               token = quickbaseService.tempTokens.get(dbid);
-              if (debug) {
-                console.log(
-                  `Using token from tempTokens for request: ${dbid}: ${
-                    token || "none"
-                  }`
-                );
+              if (token) {
+                instance.setTempToken(dbid, token); // Ensure settings.tempToken is set for non-concurrent safety
+                if (debug) {
+                  console.log(
+                    `Using token from tempTokens for request: ${dbid}: ${token}`
+                  );
+                }
+              } else if (debug) {
+                console.warn(`No token found in tempTokens for: ${dbid}`);
               }
             } else if (debug) {
               console.warn(
