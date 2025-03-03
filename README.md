@@ -8,7 +8,7 @@ This project takes the [/tflanagan/node-quickbase](https://github.com/tflanagan/
 
 ## Pitch
 
-- Stable: Handles temporary token mapping to dbids, logging, and API calls reliably.
+- Stable: Handles temporary token mapping to dbids, logging, and concurrent API calls reliably.
 - Efficient: Temporary token reuse, reducing API calls.
 - Flexible: Supports all QuickBase methods without modification.
 - Type-Safe: Retains original method signatures and response types.
