@@ -58,17 +58,40 @@ export const useQuickBase = (
 
           try {
             let token: string | undefined;
+
             if (dbid) {
               if (!quickbaseService.tempTokens.has(dbid)) {
+                // If the token isn't in the map,
+                // Generate a new token and set the instance up
+                // This calls setTempToken internally
                 await quickbaseService.ensureTempToken(dbid);
               }
               token = quickbaseService.tempTokens.get(dbid);
+
               if (token) {
-                instance.setTempToken(dbid, token); // Ensure settings.tempToken is set for non-concurrent safety
+                // A token was found in the map
+                // Get the token in the instance
+                const currentInstanceToken = (instance as any).settings
+                  ?.tempToken;
+                if (currentInstanceToken !== token) {
+                  // If the token in the instance doesn't match the token in the map
+                  // set the dbid and token in the instance
+                  instance.setTempToken(dbid, token); // Keep for non-concurrent safety
+                }
                 if (debug) {
-                  console.log(
-                    `Using token from tempTokens for request: ${dbid}: ${token}`
-                  );
+                  // Only log first set or if token changes
+                  const currentInstanceToken = (instance as any).settings
+                    ?.tempToken;
+                  if (
+                    currentInstanceToken === token &&
+                    quickbaseService.tempTokens.get(dbid) === token
+                  ) {
+                    console.log(`Token in instance matches the token in map:`);
+                  } else {
+                    console.log(
+                      `Token in instance doesn't match the token in map`
+                    );
+                  }
                 }
               } else if (debug) {
                 console.warn(`No token found in tempTokens for: ${dbid}`);
