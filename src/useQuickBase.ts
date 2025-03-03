@@ -78,22 +78,7 @@ export const useQuickBase = (
                   // set the dbid and token in the instance
                   instance.setTempToken(dbid, token); // Keep for non-concurrent safety
                 }
-                if (debug) {
-                  // Only log first set or if token changes
-                  const currentInstanceToken = (instance as any).settings
-                    ?.tempToken;
-                  if (
-                    currentInstanceToken === token &&
-                    quickbaseService.tempTokens.get(dbid) === token
-                  ) {
-                    console.log(`Token in instance matches the token in map:`);
-                  } else {
-                    console.log(
-                      `Token in instance doesn't match the token in map`
-                    );
-                  }
-                }
-              } else if (debug) {
+              } else if (debug && isProduction) {
                 console.warn(`No token found in tempTokens for: ${dbid}`);
               }
             } else if (debug) {

@@ -69,16 +69,19 @@ export const initializeQuickBaseManager = ({
       if (debug) {
         const existingToken = tempTokens.get(dbid);
         if (!tempTokens.has(dbid)) {
+          // Token doesn't exist in tempTokens map
           console.log(`Adding token to tempTokens map`); // Log adding token to map
           console.log(`Instance set temp token for: ${dbid}: ${tempToken}`); // Log setting a new temp token
         } else if (existingToken !== tempToken) {
           // The tempTokens map already has a token for the dbid
           // but it doesn't match the token in QuickBase.js.
-          // Which means QuickBase.js generated a new token.
+          // Which means the peerDependency QuickBase.js generated a new token.
           console.log(`Instance generating renewed temp token for: ${dbid}`);
           console.log(`Updating tempTokens map with generated token`); // Log updating token in map
           console.log(`Instance set temp token for: ${dbid}: ${tempToken}`); // Log setting renewed temp token
-        } else {
+        } else if (instance.settings?.tempToken !== tempToken) {
+          // If the token in the instance doesn't match the token in the map
+          // set the dbid and token in the instance
           console.log(`Instance set temp token for: ${dbid}: ${tempToken}`); // Log setting temp token
         }
       }
