@@ -6,10 +6,6 @@ A React hook wrapper for [/tflanagan/node-quickbase](https://github.com/tflanaga
 
 This project takes the [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) library and makes it accessible in React. It retains access to the original method signatures for API requests. And uses the autoRenewTempTokens feature to regenerate temporary tokens after the 5 min lifespan expires.
 
-I created a temp token map to extend the functionality of [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) allowing it to work with multiple DBID API calls with temp tokens. This was strange limitation to run into, my guess is that QuickBase changed their temp token policy at one point to be strictly tied to individual DBIDs.
-
-I beleive this library restores the origional intent and functionality of [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) in React, so I made a library.
-
 ## Pitch
 
 - Stable: Handles temporary token mapping to dbids, logging, and API calls reliably.

@@ -14,6 +14,9 @@ export const useQuickBase = (options) => {
         const instance = quickbaseService.instance;
         const handler = {
             get(target, prop) {
+                if (prop === "logMap") {
+                    return quickbaseService.logMap.bind(quickbaseService); // Bind context explicitly
+                }
                 const originalMethod = target[prop];
                 if (typeof originalMethod !== "function" || prop === "setTempToken") {
                     return originalMethod;
@@ -29,58 +32,68 @@ export const useQuickBase = (options) => {
                     }
                     const cacheKey = dbid ? `${prop}:${dbid}` : prop;
                     try {
+                        let token;
                         if (dbid) {
                             if (!quickbaseService.tempTokens.has(dbid)) {
                                 await quickbaseService.ensureTempToken(dbid);
                             }
-                            const currentToken = quickbaseService.tempTokens.get(dbid);
-                            const currentDbid = instance.settings.tempTokenDbid;
-                            if (currentToken && currentDbid !== dbid) {
-                                if (debug)
-                                    console.log(`Assigning token from tempTokens map to QuickBase.js: ${dbid}: ${currentToken}`);
-                                instance.setTempToken(dbid, currentToken);
-                            }
-                            else if (debug && currentDbid === dbid) {
-                                console.log(`Token already assigned to QuickBase.js: ${dbid}: ${currentToken}`);
-                            }
-                            else if (debug) {
-                                console.warn(`No token found in tempTokens for: ${dbid}`);
+                            token = quickbaseService.tempTokens.get(dbid);
+                            if (debug) {
+                                console.log(`Using token from tempTokens for request: ${dbid}: ${token || "none"}`);
                             }
                         }
                         else if (debug) {
                             console.warn(`No DBID found for method ${prop}, proceeding without token setup`);
                         }
                         const cachedRequest = requestCache.current.get(cacheKey);
-                        if (!cachedRequest) {
-                            const callArgs = dbid
-                                ? [...args.slice(0, -2), { ...args[0], returnAxios: true }]
+                        if (cachedRequest) {
+                            return (await cachedRequest).data;
+                        }
+                        const callArgs = dbid && isProduction && token
+                            ? [
+                                ...args.slice(0, -2),
+                                {
+                                    ...args[0],
+                                    headers: { Authorization: `QB-TEMP-TOKEN ${token}` },
+                                    returnAxios: true,
+                                },
+                            ]
+                            : dbid && !isProduction && managerOptions.userToken
+                                ? [
+                                    ...args.slice(0, -2),
+                                    {
+                                        ...args[0],
+                                        headers: {
+                                            Authorization: `QB-USER-TOKEN ${managerOptions.userToken}`,
+                                        },
+                                        returnAxios: true,
+                                    },
+                                ]
                                 : args;
-                            const requestPromise = originalMethod.apply(target, callArgs);
-                            requestCache.current.set(cacheKey, requestPromise);
-                            setTimeout(() => requestCache.current.delete(cacheKey), 100);
-                            const response = await requestPromise;
-                            if (dbid && response.config && response.config.headers) {
-                                const finalToken = response.config.headers["Authorization"]?.replace("QB-TEMP-TOKEN ", "") || "No token set";
-                                const initialToken = quickbaseService.tempTokens.get(dbid);
-                                const url = response.config.url || "Unknown URL";
-                                const params = JSON.stringify(response.config.params) || "{No params}";
-                                if (debug) {
-                                    console.log(`${url} API request. Params: ${params} Token: ${finalToken}`);
-                                    if (isProduction &&
-                                        finalToken !== initialToken &&
-                                        !finalToken.startsWith("QB-USER-TOKEN")) {
-                                        console.log(`API response provided new token: ${finalToken}`);
-                                    }
-                                }
+                        const requestPromise = originalMethod.apply(target, callArgs);
+                        requestCache.current.set(cacheKey, requestPromise);
+                        setTimeout(() => requestCache.current.delete(cacheKey), 100);
+                        const response = await requestPromise;
+                        if (dbid && response.config && response.config.headers) {
+                            const finalToken = response.config.headers["Authorization"]?.replace("QB-TEMP-TOKEN ", "") || "No token set";
+                            const initialToken = quickbaseService.tempTokens.get(dbid);
+                            const url = response.config.url || "Unknown URL";
+                            const params = JSON.stringify(response.config.params) || "{No params}";
+                            if (debug) {
+                                console.log(`${url} API request. Params: ${params} Token: ${finalToken}`);
                                 if (isProduction &&
                                     finalToken !== initialToken &&
                                     !finalToken.startsWith("QB-USER-TOKEN")) {
-                                    instance.setTempToken(dbid, finalToken);
+                                    console.log(`API response provided new token: ${finalToken}`);
                                 }
                             }
-                            return response.data;
+                            if (isProduction &&
+                                finalToken !== initialToken &&
+                                !finalToken.startsWith("QB-USER-TOKEN")) {
+                                instance.setTempToken(dbid, finalToken);
+                            }
                         }
-                        return (await cachedRequest).data;
+                        return response.data;
                     }
                     catch (error) {
                         const errorMsg = `Error in QuickBase method ${prop}${dbid ? ` for: ${dbid}` : ""}`;
@@ -95,7 +108,8 @@ export const useQuickBase = (options) => {
                 };
             },
         };
-        qbRef.current = new Proxy(instance, handler);
+        const proxiedInstance = new Proxy(instance, handler);
+        qbRef.current = proxiedInstance;
     }
     return qbRef.current;
 };

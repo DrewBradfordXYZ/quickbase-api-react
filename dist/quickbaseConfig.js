@@ -7,6 +7,7 @@ export const initializeQuickBaseManager = ({ realm, userToken = "", appToken = "
         if (!isProduction && !userToken)
             throw new Error("User token is required in development mode");
         const tempTokens = new Map();
+        const tokenPromises = new Map();
         if (debug) {
             console.log("Initializing QuickBase manager");
             console.log(`Mode: ${mode}`);
@@ -36,7 +37,7 @@ export const initializeQuickBaseManager = ({ realm, userToken = "", appToken = "
                 else if (existingToken !== tempToken) {
                     console.log(`QuickBase.js generating renewed temp token for: ${dbid}`);
                     console.log(`QuickBase.js set temp token for: ${dbid}: ${tempToken}`);
-                    console.log(`Updating tempTokens map for: ${dbid}: ${tempToken}`);
+                    console.log(`Updating tempTokens for: ${dbid}: ${tempToken}`);
                 }
                 else {
                     console.log(`QuickBase.js set temp token for: ${dbid}: ${tempToken}`);
@@ -50,17 +51,35 @@ export const initializeQuickBaseManager = ({ realm, userToken = "", appToken = "
             if (!isProduction)
                 return;
             if (!tempTokens.has(dbid)) {
-                if (debug) {
-                    console.log(`Generating initial temp token for: ${dbid}`);
+                let promise = tokenPromises.get(dbid);
+                if (!promise) {
+                    if (debug) {
+                        console.log(`Generating initial temp token for: ${dbid}`);
+                    }
+                    promise = instance.getTempTokenDBID({ dbid }).then((response) => {
+                        tempTokens.set(dbid, response.temporaryAuthorization);
+                        tokenPromises.delete(dbid);
+                        return response.temporaryAuthorization;
+                    });
+                    tokenPromises.set(dbid, promise);
                 }
-                const response = await instance.getTempTokenDBID({ dbid });
-                tempTokens.set(dbid, response.temporaryAuthorization); // Triggers setTempToken logs
+                await promise;
+            }
+        };
+        const logMap = () => {
+            if (debug) {
+                if (!tempTokens) {
+                    console.error("tempTokens is undefined in logMap");
+                    return;
+                }
+                console.log("Current tempTokens map state:", Object.fromEntries(tempTokens));
             }
         };
         window.quickBaseManager = {
             instance,
             ensureTempToken,
             tempTokens,
+            logMap,
         };
     }
     return window.quickBaseManager;
