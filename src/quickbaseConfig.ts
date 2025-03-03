@@ -1,12 +1,11 @@
-// src/quickbaseConfig.ts
 import { QuickBase, QuickBaseOptions } from "quickbase";
 
 export interface QuickBaseManagerOptions {
+  realm: string;
   userToken?: string;
   appToken?: string;
-  realm: string;
   mode?: string;
-  debug?: boolean; // Changed from logTokens
+  debug?: boolean;
 }
 
 export interface QuickBaseManager {
@@ -52,19 +51,38 @@ export const initializeQuickBaseManager = ({
 
     const instance = new QuickBase(qbOptions);
 
+    const originalSetTempToken = instance.setTempToken.bind(instance);
+    instance.setTempToken = (dbid: string, tempToken: string) => {
+      if (debug) {
+        const existingToken = tempTokens.get(dbid);
+        if (!tempTokens.has(dbid)) {
+          console.log(`QuickBase.js set temp token for: ${dbid}: ${tempToken}`);
+          console.log(`Adding token to tempTokens map: ${dbid}: ${tempToken}`);
+        } else if (existingToken !== tempToken) {
+          console.log(
+            `QuickBase.js generating renewed temp token for: ${dbid}`
+          );
+          console.log(`QuickBase.js set temp token for: ${dbid}: ${tempToken}`);
+          console.log(`Updating tempTokens map for: ${dbid}: ${tempToken}`);
+        } else {
+          console.log(`QuickBase.js set temp token for: ${dbid}: ${tempToken}`);
+        }
+      }
+
+      tempTokens.set(dbid, tempToken);
+      originalSetTempToken(dbid, tempToken);
+      return instance;
+    };
+
     const ensureTempToken = async (dbid: string) => {
       if (!isProduction) return;
       if (!tempTokens.has(dbid)) {
-        if (debug)
-          console.log(`Generating initial temp token for DBID: ${dbid}`);
+        if (debug) {
+          console.log(`Generating initial temp token for: ${dbid}`);
+        }
         const response = await instance.getTempTokenDBID({ dbid });
-        if (debug)
-          console.log(
-            `Generated temp token for DBID: ${dbid}: ${response.temporaryAuthorization}`
-          );
-        tempTokens.set(dbid, response.temporaryAuthorization);
+        tempTokens.set(dbid, response.temporaryAuthorization); // Triggers setTempToken logs
       }
-      instance.setTempToken(dbid, tempTokens.get(dbid)!);
     };
 
     (window as any).quickBaseManager = {

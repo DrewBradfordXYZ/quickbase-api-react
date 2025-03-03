@@ -1,8 +1,8 @@
 import { QuickBase } from "quickbase";
 export interface QuickBaseManagerOptions {
+    realm: string;
     userToken?: string;
     appToken?: string;
-    realm: string;
     mode?: string;
     debug?: boolean;
 }

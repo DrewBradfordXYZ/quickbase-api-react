@@ -1,24 +1,14 @@
-// src/useQuickBase.ts
 import { useRef } from "react";
 import { initializeQuickBaseManager, } from "./quickbaseConfig";
 export const useQuickBase = (options) => {
-    const { debug = false, mode = "production", onError, ...managerOptions } = options;
+    const { debug = false, onError, mode = "production", ...managerOptions } = options;
     const quickbaseService = initializeQuickBaseManager({
         ...managerOptions,
         mode,
         debug,
     });
     const isProduction = mode === "production";
-    // requestCache: A ref to a Map that caches API request promises by a unique key (method:dbid).
-    // Purpose: Prevents duplicate API calls in development mode when React Strict Mode double-runs useEffect.
-    // How it works: If a request is already in progress (e.g., getApp for buwai2zpe), the cached promise is reused,
-    // ensuring only one network request is sent despite multiple calls within a short timeframe (100ms).
     const requestCache = useRef(new Map());
-    // qbRef: A ref to hold the QuickBase proxy instance, ensuring it remains stable across renders.
-    // Purpose: Prevents infinite re-rendering loops by avoiding recreation of the proxy on every render,
-    // which would happen if useMemo depended on unstable props like inline onError functions.
-    // How it works: Initialized once when null and reused thereafter, keeping the qb instance constant
-    // unless the component unmounts and remounts, thus stabilizing useEffect dependencies.
     const qbRef = useRef(null);
     if (!qbRef.current) {
         const instance = quickbaseService.instance;
@@ -37,14 +27,29 @@ export const useQuickBase = (options) => {
                     else if (typeof arg === "string") {
                         dbid = arg;
                     }
+                    const cacheKey = dbid ? `${prop}:${dbid}` : prop;
                     try {
                         if (dbid) {
-                            await quickbaseService.ensureTempToken(dbid);
+                            if (!quickbaseService.tempTokens.has(dbid)) {
+                                await quickbaseService.ensureTempToken(dbid);
+                            }
+                            const currentToken = quickbaseService.tempTokens.get(dbid);
+                            const currentDbid = instance.settings.tempTokenDbid;
+                            if (currentToken && currentDbid !== dbid) {
+                                if (debug)
+                                    console.log(`Assigning token from tempTokens map to QuickBase.js: ${dbid}: ${currentToken}`);
+                                instance.setTempToken(dbid, currentToken);
+                            }
+                            else if (debug && currentDbid === dbid) {
+                                console.log(`Token already assigned to QuickBase.js: ${dbid}: ${currentToken}`);
+                            }
+                            else if (debug) {
+                                console.warn(`No token found in tempTokens for: ${dbid}`);
+                            }
                         }
                         else if (debug) {
                             console.warn(`No DBID found for method ${prop}, proceeding without token setup`);
                         }
-                        const cacheKey = dbid ? `${prop}:${dbid}` : prop;
                         const cachedRequest = requestCache.current.get(cacheKey);
                         if (!cachedRequest) {
                             const callArgs = dbid
@@ -60,21 +65,17 @@ export const useQuickBase = (options) => {
                                 const url = response.config.url || "Unknown URL";
                                 const params = JSON.stringify(response.config.params) || "{No params}";
                                 if (debug) {
-                                    if (isProduction) {
-                                        console.log(`${url} API request. Params: ${params} Token: ${initialToken || "No initial token"}`);
-                                        if (finalToken !== initialToken &&
-                                            !finalToken.startsWith("QB-USER-TOKEN")) {
-                                            console.log(`Token renewed for DBID: ${dbid}: ${finalToken}`);
-                                        }
-                                    }
-                                    else {
-                                        console.log(`${url} API request (dev mode). Params: ${params} User Token: ${finalToken}`);
+                                    console.log(`${url} API request. Params: ${params} Token: ${finalToken}`);
+                                    if (isProduction &&
+                                        finalToken !== initialToken &&
+                                        !finalToken.startsWith("QB-USER-TOKEN")) {
+                                        console.log(`API response provided new token: ${finalToken}`);
                                     }
                                 }
                                 if (isProduction &&
                                     finalToken !== initialToken &&
                                     !finalToken.startsWith("QB-USER-TOKEN")) {
-                                    quickbaseService.tempTokens.set(dbid, finalToken);
+                                    instance.setTempToken(dbid, finalToken);
                                 }
                             }
                             return response.data;
@@ -82,9 +83,11 @@ export const useQuickBase = (options) => {
                         return (await cachedRequest).data;
                     }
                     catch (error) {
-                        const errorMsg = `Error in QuickBase method ${prop}${dbid ? ` for DBID: ${dbid}` : ""}`;
-                        if (debug)
+                        const errorMsg = `Error in QuickBase method ${prop}${dbid ? ` for: ${dbid}` : ""}`;
+                        if (debug) {
                             console.error(errorMsg, error);
+                            console.log("Error details:", error);
+                        }
                         if (onError)
                             onError(error instanceof Error ? error : new Error(String(error)), prop, dbid);
                         throw error;
