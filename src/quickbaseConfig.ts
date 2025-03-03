@@ -14,7 +14,6 @@ export interface QuickBaseManager {
   instance: QuickBase;
   ensureTempToken: (dbid: string) => Promise<void>;
   tempTokens: Map<string, string>;
-  logMap: () => void;
 }
 
 // Function to initialize the QuickBaseManager
@@ -112,26 +111,11 @@ export const initializeQuickBaseManager = ({
       }
     };
 
-    // Function to log the current state of the tempTokens map
-    const logMap = () => {
-      if (debug) {
-        if (!tempTokens) {
-          console.error("tempTokens is undefined in logMap"); // Log error if tempTokens is undefined
-          return;
-        }
-        console.log(
-          "Current tempTokens map state:",
-          Object.fromEntries(tempTokens)
-        ); // Log the current state of the tempTokens map
-      }
-    };
-
     // Store the QuickBaseManager in the global window object
     (window as any).quickBaseManager = {
       instance,
       ensureTempToken,
       tempTokens,
-      logMap,
     };
   }
 

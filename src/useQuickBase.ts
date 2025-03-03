@@ -9,9 +9,7 @@ export interface QuickBaseHookOptions extends QuickBaseManagerOptions {
   onError?: (err: Error, method: string, dbid?: string) => void;
 }
 
-export interface QuickBaseExtended extends QuickBase {
-  logMap: () => void;
-}
+export type QuickBaseExtended = QuickBase;
 
 export const useQuickBase = (
   options: QuickBaseHookOptions
@@ -29,7 +27,6 @@ export const useQuickBase = (
   });
   const isProduction = mode === "production";
 
-  // Queue for non-concurrent requests
   const requestQueue = useRef<
     Array<{
       promise: Promise<any>;
@@ -38,9 +35,10 @@ export const useQuickBase = (
     }>
   >([]);
   const processing = useRef(false);
+  const activeRequests = useRef(new Set<Promise<any>>());
+  const tokenPromises = useRef<Map<string, Promise<string>>>(new Map());
   const qbRef = useRef<QuickBaseExtended | null>(null);
 
-  // Process the queue sequentially
   const processQueue = async () => {
     if (processing.current || requestQueue.current.length === 0) return;
     processing.current = true;
@@ -58,14 +56,34 @@ export const useQuickBase = (
     processing.current = false;
   };
 
+  const ensureToken = async (dbid: string): Promise<string> => {
+    if (!isProduction) return managerOptions.userToken || "";
+    if (!quickbaseService.tempTokens.has(dbid)) {
+      let tokenPromise = tokenPromises.current.get(dbid);
+      if (!tokenPromise) {
+        if (debug) {
+          console.log(`Fetching token for ${dbid}`);
+        }
+        tokenPromise = quickbaseService.instance
+          .getTempTokenDBID({ dbid })
+          .then((response) => {
+            const token = response.temporaryAuthorization;
+            quickbaseService.tempTokens.set(dbid, token);
+            tokenPromises.current.delete(dbid);
+            return token;
+          });
+        tokenPromises.current.set(dbid, tokenPromise);
+      }
+      return await tokenPromise;
+    }
+    return quickbaseService.tempTokens.get(dbid)!;
+  };
+
   if (!qbRef.current) {
     const instance = quickbaseService.instance;
 
     const handler: ProxyHandler<QuickBase> = {
       get(target: QuickBase, prop: string) {
-        if (prop === "logMap") {
-          return quickbaseService.logMap.bind(quickbaseService);
-        }
         const originalMethod = (target as any)[prop];
         if (typeof originalMethod !== "function" || prop === "setTempToken") {
           return originalMethod;
@@ -80,111 +98,134 @@ export const useQuickBase = (
             dbid = arg;
           }
 
-          const executeRequest = async () => {
-            try {
-              let token: string | undefined;
+          const executeRequest = async (attempt = 0): Promise<any> => {
+            let promise: Promise<any>;
+            promise = new Promise(async (resolve, reject) => {
+              try {
+                let token: string | undefined;
 
-              if (dbid) {
-                if (!quickbaseService.tempTokens.has(dbid)) {
-                  await quickbaseService.ensureTempToken(dbid);
-                }
-                token = quickbaseService.tempTokens.get(dbid);
-
-                if (token) {
+                if (dbid) {
+                  token = await ensureToken(dbid);
                   const currentInstanceToken = (instance as any).settings
                     ?.tempToken;
                   if (currentInstanceToken !== token) {
                     instance.setTempToken(dbid, token);
                   }
-                } else if (debug && isProduction) {
-                  console.warn(`No token found in tempTokens for: ${dbid}`);
+                } else if (debug) {
+                  console.warn(
+                    `No DBID found for method ${prop}, proceeding without token setup`
+                  );
                 }
-              } else if (debug) {
-                console.warn(
-                  `No DBID found for method ${prop}, proceeding without token setup`
-                );
-              }
 
-              const callArgs =
-                dbid && isProduction && token
-                  ? [
-                      ...args.slice(0, -2),
-                      {
-                        ...args[0],
-                        headers: { Authorization: `QB-TEMP-TOKEN ${token}` },
-                        returnAxios: true,
-                      },
-                    ]
-                  : dbid && !isProduction && managerOptions.userToken
-                  ? [
-                      ...args.slice(0, -2),
-                      {
-                        ...args[0],
-                        headers: {
-                          Authorization: `QB-USER-TOKEN ${managerOptions.userToken}`,
+                const callArgs =
+                  dbid && isProduction && token
+                    ? [
+                        ...args.slice(0, -2),
+                        {
+                          ...args[0],
+                          headers: { Authorization: `QB-TEMP-TOKEN ${token}` },
+                          returnAxios: true,
                         },
-                        returnAxios: true,
-                      },
-                    ]
-                  : args;
+                      ]
+                    : dbid && !isProduction && managerOptions.userToken
+                    ? [
+                        ...args.slice(0, -2),
+                        {
+                          ...args[0],
+                          headers: {
+                            Authorization: `QB-USER-TOKEN ${managerOptions.userToken}`,
+                          },
+                          returnAxios: true,
+                        },
+                      ]
+                    : args;
 
-              const response = await originalMethod.apply(target, callArgs);
+                const response = await originalMethod.apply(target, callArgs);
 
-              if (dbid && response.config && response.config.headers) {
-                const finalToken =
-                  response.config.headers["Authorization"]?.replace(
-                    "QB-TEMP-TOKEN ",
-                    ""
-                  ) || "No token set";
-                const initialToken = quickbaseService.tempTokens.get(dbid);
+                if (dbid && response.config && response.config.headers) {
+                  const finalToken =
+                    response.config.headers["Authorization"]?.replace(
+                      "QB-TEMP-TOKEN ",
+                      ""
+                    ) || "No token set";
+                  const initialToken = quickbaseService.tempTokens.get(dbid);
+                  const url = response.config.url || "Unknown URL";
+                  const params =
+                    JSON.stringify(response.config.params) || "{No params}";
 
-                if (
-                  isProduction &&
-                  finalToken !== initialToken &&
-                  !finalToken.startsWith("QB-USER-TOKEN")
-                ) {
-                  instance.setTempToken(dbid, finalToken);
                   if (debug) {
                     console.log(
-                      `API response provided new token: ${finalToken}`
+                      `${url} API request. Params: ${params} Token: ${finalToken}`
                     );
                   }
-                }
-              }
 
-              return response;
-            } catch (error) {
-              const errorMsg = `Error in QuickBase method ${prop}${
-                dbid ? ` for: ${dbid}` : ""
-              }`;
-              if (debug) {
-                console.error(errorMsg, error);
-                console.log("Error details:", error);
+                  if (
+                    isProduction &&
+                    finalToken !== initialToken &&
+                    !finalToken.startsWith("QB-USER-TOKEN")
+                  ) {
+                    instance.setTempToken(dbid, finalToken);
+                    quickbaseService.tempTokens.set(dbid, finalToken);
+                    if (debug) {
+                      console.log(
+                        `API response provided new token: ${finalToken}`
+                      );
+                    }
+                  }
+                }
+
+                resolve(response);
+              } catch (error) {
+                const errorMsg = `Error in QuickBase method ${prop}${
+                  dbid ? ` for: ${dbid}` : ""
+                }`;
+                if (debug) {
+                  console.error(errorMsg, error);
+                  console.log("Error details:", error);
+                }
+                if (
+                  error instanceof Error &&
+                  error.message === "Unauthorized" &&
+                  dbid &&
+                  attempt < 1
+                ) {
+                  // Retry with a fresh token on 401
+                  if (debug) {
+                    console.log(`Retrying ${prop} for ${dbid} due to 401`);
+                  }
+                  quickbaseService.tempTokens.delete(dbid); // Force refresh
+                  const retryResponse = await executeRequest(attempt + 1);
+                  resolve(retryResponse);
+                } else {
+                  if (onError)
+                    onError(
+                      error instanceof Error ? error : new Error(String(error)),
+                      prop,
+                      dbid
+                    );
+                  reject(error);
+                }
+              } finally {
+                activeRequests.current.delete(promise);
               }
-              if (onError)
-                onError(
-                  error instanceof Error ? error : new Error(String(error)),
-                  prop,
-                  dbid
-                );
-              throw error;
-            }
+            });
+
+            activeRequests.current.add(promise);
+            return promise;
           };
 
-          // Detect if this is part of a concurrent call (e.g., Promise.all)
-          const isConcurrent =
-            Promise.all.length > 0 &&
+          // Queue all requests unless part of a Promise.all batch
+          const isConcurrentBatch =
+            activeRequests.current.size > 0 &&
             new Error().stack?.includes("Promise.all");
 
-          if (!isConcurrent) {
-            // Non-concurrent: Queue the request
+          if (!isConcurrentBatch) {
             return new Promise<any>((resolve, reject) => {
               const promise = executeRequest();
               requestQueue.current.push({ promise, resolve, reject });
               processQueue();
             });
           } else {
-            // Concurrent: Execute directly without queuing
             const response = await executeRequest();
             return response.data;
           }
