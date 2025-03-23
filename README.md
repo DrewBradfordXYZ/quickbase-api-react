@@ -2,7 +2,7 @@
 
 ## Issues
 
-This project ran into difficulties handling concurrency and was abandoned. It works but is really hacky.
+This project ran into some limitations and was abandoned. It works but is really hacky.
 
 I created a Typescript API client from scratch to solve this problem. https://github.com/DrewBradfordXYZ/quickbase-js
 
