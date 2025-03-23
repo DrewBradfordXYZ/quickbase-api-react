@@ -1,19 +1,16 @@
 # quickbase-api-react
 
+## Issues
+
+This project ran into difficulties handling concurrency and was abandoned. It works but is really hacky.
+
+I created a Typescript API client from scratch to solve this problem. https://github.com/DrewBradfordXYZ/quickbase-js
+
 ## Description
 
 A React hook wrapper for [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) providing token management, logging, and environment-specific behavior for the [QuickBase JSON RESTful API](https://developer.quickbase.com/). Written in TypeScript.
 
-This project takes the [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) library and makes it accessible in React. It retains access to the original method signatures for API requests. And uses the autoRenewTempTokens feature to regenerate temporary tokens after the 5 min lifespan expires.
-
-## Pitch
-
-- Stable: Handles temporary token mapping to dbids, logging, and concurrent API calls reliably.
-- Efficient: Temporary token reuse, reducing API calls.
-- Flexible: Supports all QuickBase methods without modification.
-- Type-Safe: Retains original method signatures and response types.
-- Logging: Offers configurable logging for debugging.
-- Reusable: Can be dropped into any React project using [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase).
+This project takes the [/tflanagan/node-quickbase](https://github.com/tflanagan/node-quickbase) library and attempts to make it accessible in React. It retains access to the original method signatures for API requests. And uses the autoRenewTempTokens feature to regenerate temporary tokens after the 5 min lifespan expires.
 
 ## Prerequisites
 
